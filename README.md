@@ -12,6 +12,19 @@ Misconfiguring the rules **WILL** break the protections offered by the Same-Orig
 
 Only requests with an `Origin` header and a matching rule are modified at all by this extension.
 
+## Installation
+
+0. Must be using Firefox ESR or development versions where `xpinstall.signatures.required` is `false`
+
+1. Zip all files in this repository as ccc.zip
+2. Rename ccc.zip to ccc.xpi
+3. Open ccc.xpi in Firefox
+
+Or for testing in a session
+1. Go to about:debugging
+2. Click on "Load Temporary Add-on"
+3. Point it to the directory containing this repository
+
 ## Configuration
 
 **Warning** Read first: <https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS>, and <https://developer.mozilla.org/en-US/docs/Web/HTML/CORS_settings_attributes>.
