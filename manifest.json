@@ -1,0 +1,29 @@
+{
+  "applications": {
+    "gecko": {
+      "id": "custom-cors-control@tartpvule.localhost",
+      "strict_min_version": "57.0"
+    }
+  },
+  "author": "tartpvule",
+  "background": {
+    "scripts": [
+      "background.js"
+    ]
+  },
+  "description": "Advanced user control for CORS",
+  "manifest_version": 2,
+  "name": "Custom CORS Control",
+  "options_ui": {
+    "browser_style": true,
+    "page": "options.html"
+  },
+  "permissions": [
+    "<all_urls>",
+    "storage",
+    "webRequest",
+    "webRequestBlocking"
+  ],
+  "short_name": "CCC",
+  "version": "1"
+}
