@@ -21,6 +21,7 @@ Only requests with an `Origin` header and a matching rule are modified at all by
 3. Open ccc.xpi in Firefox
 
 Or for testing in a session
+
 1. Go to about:debugging
 2. Click on "Load Temporary Add-on"
 3. Point it to the directory containing this repository
@@ -116,6 +117,7 @@ Or for testing in a session
       }
     }
   }
+}
 ```
 
 ## Acknowledgments
