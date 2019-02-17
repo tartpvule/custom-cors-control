@@ -131,7 +131,7 @@ let hashDetails = function(details) {
 	return `${details.originUrl}|${details.url}`;
 }
 
-let handlePreflightRequest = function(details, rule, [h_acrm, h_acrh, h_origin]) {
+let handlePreflightRequest = function(details, record, rule, [h_acrm, h_acrh, h_origin]) {
 	if (rule.ACAO === 'block') {
 		return { cancel: true };
 	}
@@ -153,40 +153,20 @@ let handlePreflightRequest = function(details, rule, [h_acrm, h_acrh, h_origin])
 		let intersect = _intersect(rule.ACRH, original); 
 		if (intersect.length !== original.length) {
 			acrh_omitted = _complement(intersect, original);
+			record.acrh_omitted = acrh_omitted;
 			h_acrh.value = intersect.join(', ');
 			dirty = true;
 		}
 	}
 
-	let key = hashDetails(details);
-	let record = {
-		rule: rule,
-		origin: h_origin.value,
-		acrh_omitted: acrh_omitted || null
-	};
-	Preflights[key] = record;
-
 	if (dirty) {
 		return { requestHeaders: details.requestHeaders };
 	}
 };
-let handleRequest = function(details, rule, [h_acrm, h_acrh, h_origin]) {
+let handleRequest = function(details, record, rule, [h_acrm, h_acrh, h_origin]) {
 	if (rule.ACAO === 'block') {
 		return { cancel: true };
 	}
-
-	let key = hashDetails(details);
-	let record = Preflights[key];
-	if (record) {
-		delete Preflights[key];
-	} else {
-		record = {
-			rule: rule,
-			origin: h_origin.value,
-			acrh_omitted: null
-		};
-	}
-	Requests[details.requestId] = record;
 
 	if (rule.ACAM && !rule.ACAM.includes(details.method)) {
 		return { cancel: true };
@@ -305,8 +285,8 @@ browser.webRequest.onBeforeSendHeaders.addListener(function(details) {
 		'access-control-request-method', 'access-control-request-headers',
 		'origin'
 	]);
-
-	if (!headers[2] /* h_origin */) {
+	let h_origin = headers[2];
+	if (!h_origin) {
 		return;
 	}
 
@@ -316,10 +296,34 @@ browser.webRequest.onBeforeSendHeaders.addListener(function(details) {
 		return;
 	}
 
-	if (details.method === 'OPTIONS') {
-		return handlePreflightRequest(details, rule, headers);
+	let key = hashDetails(details);
+	let record = Preflights[key];
+	if (details.method === 'OPTIONS' && !record) {
+		record = {
+			rule: rule,
+			origin: h_origin.value,
+			acrh_omitted: null
+		};
+		let ret = handlePreflightRequest(details, record, rule, headers);
+		if (ret && !ret.cancel) {
+			Preflights[key] = record;
+		}
+		return ret;
 	} else {
-		return handleRequest(details, rule, headers);
+		if (record) {
+			delete Preflights[key];
+		} else {
+			record = {
+				rule: rule,
+				origin: h_origin.value,
+				acrh_omitted: null
+			};
+		}
+		let ret =  handleRequest(details, record, rule, headers);
+		if (ret && !ret.cancel) {
+			Requests[details.requestId] = record;
+		}
+		return ret;
 	}
 }, {
 	urls: ['<all_urls>']
