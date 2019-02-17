@@ -177,7 +177,9 @@ let handleRequest = function(details, rule, [h_acrm, h_acrh, h_origin]) {
 
 	let key = hashDetails(details);
 	let record = Preflights[key];
-	if (!record) {
+	if (record) {
+		delete Preflights[key];
+	} else {
 		record = {
 			rule: rule,
 			origin: h_origin.value,
@@ -186,11 +188,11 @@ let handleRequest = function(details, rule, [h_acrm, h_acrh, h_origin]) {
 	}
 	Requests[details.requestId] = record;
 
-	let dirty = false;
-
 	if (rule.ACAM && !rule.ACAM.includes(details.method)) {
 		return { cancel: true };
 	}
+
+	let dirty = false;
 
 	if (rule.ACAO === 'allow' || rule.ACAO === 'star') {
 		_removeFromArray(details.requestHeaders, h_origin);
@@ -216,13 +218,15 @@ let handleRequest = function(details, rule, [h_acrm, h_acrh, h_origin]) {
 };
 
 let handlePreflightResponse = function(details, rule, [h_acao, h_aceh, h_acac, h_acam, h_acah]) {
+	let dirty = false;
+
 	if (rule.ACAO === 'allow') {
 		_setHeader(details.responseHeaders, h_acao, 'Access-Control-Allow-Origin', details.originUrl);
+		dirty = true;
 	} else if (rule.ACAO === 'star') {
 		_setHeader(details.responseHeaders, h_acao, 'Access-Control-Allow-Origin', '*');
+		dirty = true;
 	}
-
-	let dirty = false;
 
 	if (h_aceh && rule.ACEH) {
 		let original = h_aceh.value.split(/, */g);
@@ -261,13 +265,15 @@ let handlePreflightResponse = function(details, rule, [h_acao, h_aceh, h_acac, h
 	}
 };
 let handleResponse = function(details, rule, [h_acao, h_aceh, h_acac, h_acam, h_acah]) {
+	let dirty = false;
+
 	if (rule.ACAO === 'allow') {
 		_setHeader(details.responseHeaders, h_acao, 'Access-Control-Allow-Origin', details.originUrl);
+		dirty = true;
 	} else if (rule.ACAO === 'star') {
 		_setHeader(details.responseHeaders, h_acao, 'Access-Control-Allow-Origin', '*');
+		dirty = true;
 	}
-
-	let dirty = false;
 
 	if (h_aceh && rule.ACEH) {
 		let original = h_aceh.value.split(/, */g);
@@ -331,6 +337,9 @@ browser.webRequest.onHeadersReceived.addListener(function(details) {
 	if (details.method === 'OPTIONS') {
 		let key = hashDetails(details);
 		record = Preflights[key];
+		if (record) {
+			isPreflight = true;
+		}
 	}
 	if (!record) {
 		record = Requests[details.requestId];
@@ -346,7 +355,7 @@ browser.webRequest.onHeadersReceived.addListener(function(details) {
 		'access-control-allow-headers'
 	]);
 
-	if (details.method === 'OPTIONS') {
+	if (isPreflight) {
 		return handlePreflightResponse(details, record.rule, headers);
 	} else {
 		return handleResponse(details, record.rule, headers);
