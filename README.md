@@ -1,9 +1,5 @@
 **Custom CORS Control** - Advanced user control for CORS
 
-## EXPERIMENTAL
-
- EXPERIMENTAL! This project is not currently "ready for production". Breaking changes are to be expected. More tests and feedbacks are needed.
-
 ## Introduction
 
 This extension aims to provide a user with complete control over the CORS mechanisms.
@@ -11,20 +7,6 @@ This extension aims to provide a user with complete control over the CORS mechan
 Misconfiguring the rules **WILL** break the protections offered by the Same-Origin Policy.
 
 Only requests with an `Origin` header and a matching rule are modified at all by this extension.
-
-## Installation
-
-0. Must be using Firefox ESR or development versions where `xpinstall.signatures.required` is `false`
-
-1. Zip all files in this repository as ccc.zip
-2. Rename ccc.zip to ccc.xpi
-3. Open ccc.xpi in Firefox
-
-Or for testing in a session
-
-1. Go to about:debugging
-2. Click on "Load Temporary Add-on"
-3. Point it to the directory containing this repository
 
 ## Configuration
 
@@ -117,7 +99,6 @@ Or for testing in a session
       }
     }
   }
-}
 ```
 
 ## Acknowledgments
