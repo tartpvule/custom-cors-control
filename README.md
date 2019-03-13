@@ -8,6 +8,8 @@ Misconfiguring the rules **WILL** break the protections offered by the Same-Orig
 
 Only requests with an `Origin` header and a matching rule are modified at all by this extension.
 
+AMO: <https://addons.mozilla.org/en-US/firefox/addon/custom-cors-control/>
+
 ## Configuration
 
 **Warning** Read first: <https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS>, and <https://developer.mozilla.org/en-US/docs/Web/HTML/CORS_settings_attributes>.
