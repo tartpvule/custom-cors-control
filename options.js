@@ -12,7 +12,7 @@ let _getRulesToTextarea = function(textarea) {
 		topic: 'ccc_get_rules'
 	}).then(function(json) {
 		let parsed = JSON.parse(json);
-		textarea.value = JSON.stringify(parsed, null, '  ');
+		textarea.value = JSON.stringify(parsed, null, ' ');
 	});
 };
 let _setRulesFromTextarea = function(textarea) {

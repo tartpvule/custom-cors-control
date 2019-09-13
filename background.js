@@ -32,15 +32,15 @@ let setRules = async function(json) {
 	});
 	Rules = parsed;
 };
-let readRulesFromStorage = async function() {
-	let json = await browser.storage.sync.get('rules');
-	if (typeof json === 'string') {
-		Rules = JSON.parse(json);
+let readRules = async function() {
+	let result = await browser.storage.sync.get('rules');
+	if (typeof result.rule !== 'undefined') {
+		Rules = JSON.parse(result.rule);
 	} else {
 		Rules = DefaultRules;
 	}
 };
-let clearStorage = async function() {
+let clearRules = async function() {
 	await browser.storage.sync.clear();
 	Rules = DefaultRules;
 };
@@ -127,9 +127,10 @@ let matchRule = function(type, origin, target, path) {
 
 const Preflights = { __proto__: null };
 const Requests = { __proto__: null };
-let hashDetails = function(details) {
-	return `${details.originUrl}|${details.url}`;
+let _hash = function(originUrl, url) {
+	return `${_stripHashFromUrl(originUrl)}|${_stripHashFromUrl(url)}`;
 }
+
 
 let handlePreflightRequest = function(details, record, rule, [h_acrm, h_acrh, h_origin]) {
 	if (rule.ACAO === 'block') {
@@ -197,11 +198,11 @@ let handleRequest = function(details, record, rule, [h_acrm, h_acrh, h_origin]) 
 	}
 };
 
-let handlePreflightResponse = function(details, rule, [h_acao, h_aceh, h_acac, h_acam, h_acah]) {
+let handlePreflightResponse = function(details, originUrl, rule, [h_acao, h_aceh, h_acac, h_acam, h_acah]) {
 	let dirty = false;
 
 	if (rule.ACAO === 'allow') {
-		_setHeader(details.responseHeaders, h_acao, 'Access-Control-Allow-Origin', details.originUrl);
+		_setHeader(details.responseHeaders, h_acao, 'Access-Control-Allow-Origin', originUrl.origin);
 		dirty = true;
 	} else if (rule.ACAO === 'star') {
 		_setHeader(details.responseHeaders, h_acao, 'Access-Control-Allow-Origin', '*');
@@ -209,7 +210,7 @@ let handlePreflightResponse = function(details, rule, [h_acao, h_aceh, h_acac, h
 	}
 
 	if (h_aceh && rule.ACEH) {
-		let original = h_aceh.value.split(/, */g);
+		let original = h_aceh.value.toLowerCase().split(/, */g);
 		let intersect = _intersect(rule.ACEH, original);
 		if (intersect.length !== original.length) {
 			h_aceh.value = intersect.join(', ');
@@ -223,7 +224,7 @@ let handlePreflightResponse = function(details, rule, [h_acao, h_aceh, h_acac, h
 	}
 
 	if (h_acam && rule.ACAM) {
-		let original = h_acam.value.split(/, */g);
+		let original = h_acam.value.toLowerCase().split(/, */g);
 		let intersect = _intersect(rule.ACAM, original);
 		if (intersect.length !== original.length) {
 			h_acam.value = intersect.join(', ');
@@ -232,7 +233,7 @@ let handlePreflightResponse = function(details, rule, [h_acao, h_aceh, h_acac, h
 	}
 
 	if (h_acah && rule.ACAH) {
-		let original = h_acah.value.split(/, */g);
+		let original = h_acah.value.toLowerCase().split(/, */g);
 		let intersect = _intersect(rule.ACAH, original);
 		if (intersect.length !== original.length) {
 			h_acah.value = intersect.join(', ');
@@ -244,11 +245,11 @@ let handlePreflightResponse = function(details, rule, [h_acao, h_aceh, h_acac, h
 		return { responseHeaders: details.responseHeaders };
 	}
 };
-let handleResponse = function(details, rule, [h_acao, h_aceh, h_acac, h_acam, h_acah]) {
+let handleResponse = function(details, originUrl, rule, [h_acao, h_aceh, h_acac, h_acam, h_acah]) {
 	let dirty = false;
 
 	if (rule.ACAO === 'allow') {
-		_setHeader(details.responseHeaders, h_acao, 'Access-Control-Allow-Origin', details.originUrl);
+		_setHeader(details.responseHeaders, h_acao, 'Access-Control-Allow-Origin', originUrl.origin);
 		dirty = true;
 	} else if (rule.ACAO === 'star') {
 		_setHeader(details.responseHeaders, h_acao, 'Access-Control-Allow-Origin', '*');
@@ -256,7 +257,7 @@ let handleResponse = function(details, rule, [h_acao, h_aceh, h_acac, h_acam, h_
 	}
 
 	if (h_aceh && rule.ACEH) {
-		let original = h_aceh.value.split(/, */g);
+		let original = h_aceh.value.toLowerCase().split(/, */g);
 		let intersect = _intersect(rule.ACEH, original);
 		if (intersect.length !== original.length) {
 			h_aceh.value = intersect.join(', ');
@@ -290,13 +291,15 @@ browser.webRequest.onBeforeSendHeaders.addListener(function(details) {
 		return;
 	}
 
+	let originUrl = new URL(details.originUrl);
 	let url = new URL(details.url);
-	let rule = matchRule(details.type, details.originUrl, url.origin, url.pathname);
+
+	let rule = matchRule(details.type, originUrl.origin, url.origin, url.pathname);
 	if (!rule) {
 		return;
 	}
 
-	let key = hashDetails(details);
+	let key = _hash(originUrl, url);
 	let record = Preflights[key];
 	if (details.method === 'OPTIONS' && !record) {
 		record = {
@@ -319,6 +322,7 @@ browser.webRequest.onBeforeSendHeaders.addListener(function(details) {
 				acrh_omitted: null
 			};
 		}
+
 		let ret =  handleRequest(details, record, rule, headers);
 		if (ret && !ret.cancel) {
 			Requests[details.requestId] = record;
@@ -337,9 +341,13 @@ browser.webRequest.onHeadersReceived.addListener(function(details) {
 		return;
 	}
 
+	let originUrl = new URL(details.originUrl);
+	let url = new URL(details.url);
+
+	let isPreflight = false;
 	let record;
 	if (details.method === 'OPTIONS') {
-		let key = hashDetails(details);
+		let key = _hash(originUrl, url);
 		record = Preflights[key];
 		if (record) {
 			isPreflight = true;
@@ -360,9 +368,9 @@ browser.webRequest.onHeadersReceived.addListener(function(details) {
 	]);
 
 	if (isPreflight) {
-		return handlePreflightResponse(details, record.rule, headers);
+		return handlePreflightResponse(details, originUrl, record.rule, headers);
 	} else {
-		return handleResponse(details, record.rule, headers);
+		return handleResponse(details, originUrl, record.rule, headers);
 	}
 }, {
 	urls: ['<all_urls>']
@@ -379,14 +387,13 @@ browser.runtime.onMessage.addListener(async function(message, sender) {
 	} else if (topic === 'ccc_set_rules') {
 		return await setRules(data);
 	} else if (topic === 'ccc_read_storage') {
-		return await readRulesFromStorage();
+		return await readRules();
 	} else if (topic === 'ccc_clear_storage') {
-		return await clearStorage();
+		return await clearRules();
 	}
-
 });
 
-readRulesFromStorage();
+readRules();
 
 // --------------------------------------------------
 
@@ -495,4 +502,12 @@ function _complement(S, U) {
 		}
 	}
 	return Y;
+}
+
+/**
+ * @param {URL} u A URL Object
+ * @returns {String} HREF with hash stripped
+ */
+function _stripHashFromUrl(u) {
+	return u.href.substring(0, u.href.length - u.hash.length);
 }

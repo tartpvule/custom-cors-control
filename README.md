@@ -101,6 +101,7 @@ AMO: <https://addons.mozilla.org/en-US/firefox/addon/custom-cors-control/>
       }
     }
   }
+}
 ```
 
 ## Acknowledgments
