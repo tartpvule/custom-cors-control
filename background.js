@@ -278,7 +278,7 @@ let handleResponse = function(details, originUrl, rule, [h_acao, h_aceh, h_acac,
 // --------------------------------------------------
 
 browser.webRequest.onBeforeSendHeaders.addListener(function(details) {
-	if (details.tabId === -1 || !details.requestHeaders) {
+	if (!details.originUrl || details.tabId === -1 || !details.requestHeaders) {
 		return;
 	}
 
@@ -337,7 +337,7 @@ browser.webRequest.onBeforeSendHeaders.addListener(function(details) {
 ]);
 
 browser.webRequest.onHeadersReceived.addListener(function(details) {
-	if (!details.responseHeaders) {
+	if (!details.originUrl || details.tabId === -1 || !details.responseHeaders) {
 		return;
 	}
 
