@@ -40,7 +40,7 @@ AMO: <https://addons.mozilla.org/en-US/firefox/addon/custom-cors-control/>
 
 2. Origin
 
-	Evaluated one-by-one against `details.origin` with `String#endsWith`, but `*` matches everything.
+	Evaluated one-by-one against the origin in `details.originUrl` with `String#endsWith`, but `*` matches everything.
 
 3. Target origin
 
@@ -58,9 +58,9 @@ AMO: <https://addons.mozilla.org/en-US/firefox/addon/custom-cors-control/>
 
 * `ACAO`
 
-	`"allow"`: Set `Access-Control-Request-Headers: <origin>` in responses.
+	`"allow"`: Set `Access-Control-Allow-Origin: <origin>` in responses.
 
-	`"star"`: Set `Access-Contorl-Request-Headers: *` in responses.
+	`"star"`: Set `Access-Contorl-Allow-Origin: *` in responses.
 
 	`"block"`: Cancel all requests.
 
@@ -115,7 +115,7 @@ AMO: <https://addons.mozilla.org/en-US/firefox/addon/custom-cors-control/>
 
 The MIT License (MIT)
 
-Copyright (c) 2019 tartpvule
+Copyright (c) 2019-2020 tartpvule
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
